@@ -117,7 +117,7 @@ export function AppShell({
           </button>
           {backTo && (
             <Link
-              to={backTo.to}
+              to={backTo.to as never}
               params={backTo.params as never}
               aria-label="Go back"
               className="text-secondary transition-colors hover:text-primary"

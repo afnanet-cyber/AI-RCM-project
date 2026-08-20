@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SubmissionsIndexRouteImport } from './routes/submissions.index'
+import { Route as SubmissionsSubmissionIdRouteImport } from './routes/submissions.$submissionId'
 import { Route as WorkspaceIndexRouteImport } from './routes/workspace.index'
 import { Route as WorkspaceClaimIdRouteImport } from './routes/workspace.$claimId'
 
@@ -19,9 +22,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
   id: '/submissions/',
   path: '/submissions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmissionsSubmissionIdRoute = SubmissionsSubmissionIdRouteImport.update({
+  id: '/submissions/$submissionId',
+  path: '/submissions/$submissionId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkspaceIndexRoute = WorkspaceIndexRouteImport.update({
@@ -37,12 +55,18 @@ const WorkspaceClaimIdRoute = WorkspaceClaimIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
   '/submissions': typeof SubmissionsIndexRoute
   '/workspace': typeof WorkspaceIndexRoute
@@ -50,20 +74,48 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/workspace/$claimId' | '/submissions/' | '/workspace/'
+  fullPaths:
+    | '/'
+    | '/reports'
+    | '/settings'
+    | '/submissions/$submissionId'
+    | '/workspace/$claimId'
+    | '/submissions/'
+    | '/workspace/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/workspace/$claimId' | '/submissions' | '/workspace'
-  id: '__root__' | '/' | '/workspace/$claimId' | '/submissions/' | '/workspace/'
+  to:
+    | '/'
+    | '/reports'
+    | '/settings'
+    | '/submissions/$submissionId'
+    | '/workspace/$claimId'
+    | '/submissions'
+    | '/workspace'
+  id:
+    | '__root__'
+    | '/'
+    | '/reports'
+    | '/settings'
+    | '/submissions/$submissionId'
+    | '/workspace/$claimId'
+    | '/submissions/'
+    | '/workspace/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
+  SubmissionsSubmissionIdRoute: typeof SubmissionsSubmissionIdRoute
   WorkspaceClaimIdRoute: typeof WorkspaceClaimIdRoute
   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
@@ -78,11 +130,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/submissions/': {
       id: '/submissions/'
       path: '/submissions'
       fullPath: '/submissions/'
       preLoaderRoute: typeof SubmissionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submissions/$submissionId': {
+      id: '/submissions/$submissionId'
+      path: '/submissions/$submissionId'
+      fullPath: '/submissions/$submissionId'
+      preLoaderRoute: typeof SubmissionsSubmissionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workspace/': {
@@ -104,6 +177,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
+  SubmissionsSubmissionIdRoute: SubmissionsSubmissionIdRoute,
   WorkspaceClaimIdRoute: WorkspaceClaimIdRoute,
   SubmissionsIndexRoute: SubmissionsIndexRoute,
   WorkspaceIndexRoute: WorkspaceIndexRoute,

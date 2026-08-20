@@ -117,10 +117,21 @@ export const metrics = [
 ];
 
 export const rejectionReasons = [
-  { label: "Missing Diagnosis Code", pct: 34, bar: "bg-critical-amethyst" },
-  { label: "Duplicate Claim", pct: 28, bar: "bg-warning-amber" },
-  { label: "Invalid Member ID", pct: 15, bar: "bg-primary" },
-  { label: "Service Not Covered", pct: 12, bar: "bg-secondary" },
+  { label: "Missing supporting documents, such as medical reports or test results", pct: 18, bar: "bg-critical-amethyst" },
+  { label: "Incorrect, invalid, or outdated medical coding", pct: 15, bar: "bg-critical-amethyst" },
+  { label: "Mismatch between claim and medical record information", pct: 12, bar: "bg-warning-amber" },
+  { label: "Insufficient Medical Necessity", pct: 11, bar: "bg-warning-amber" },
+  { label: "Duplicate claim or duplicate service submission", pct: 10, bar: "bg-primary" },
+  { label: "Missing mandatory information or required fields", pct: 9, bar: "bg-primary" },
+  { label: "Incorrect patient or insurance policy information", pct: 8, bar: "bg-secondary" },
+  { label: "Missing required Prior Authorization", pct: 6, bar: "bg-secondary" },
+  { label: "Expired Prior Authorization", pct: 4, bar: "bg-tertiary" },
+  { label: "Service is not covered under the insurance policy", pct: 3, bar: "bg-tertiary" },
+  { label: "Exceeding the allowed coverage limit", pct: 2, bar: "bg-surface-variant" },
+  { label: "Exceeding the allowed frequency of visits or services", pct: 1, bar: "bg-surface-variant" },
+  { label: "ICD-10 diagnosis code does not support the requested CPT procedure", pct: 0.5, bar: "bg-surface-variant" },
+  { label: "Patient is not eligible at the time of service", pct: 0.3, bar: "bg-surface-variant" },
+  { label: "Provider is not in the approved insurance network", pct: 0.2, bar: "bg-surface-variant" },
 ];
 
 // ---------------------------------------------------------------- Workspace

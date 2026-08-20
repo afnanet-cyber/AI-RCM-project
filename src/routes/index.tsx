@@ -151,7 +151,7 @@ function DashboardPage() {
                         <span
                           className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-label-caps text-[10px] ${riskChip[c.risk]}`}
                         >
-                          <Icon name={riskIcon[c.risk]} className="text-[12px]" />
+                          <Icon name={riskIcon[c.risk] ?? "info"} className="text-[12px]" />
                           {riskLabel[c.risk]}
                         </span>
                       </td>

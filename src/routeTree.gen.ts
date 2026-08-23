@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApprovalsIndexRouteImport } from './routes/approvals.index'
+import { Route as ApprovalsApprovalIdRouteImport } from './routes/approvals.$approvalId'
 import { Route as SubmissionsIndexRouteImport } from './routes/submissions.index'
 import { Route as SubmissionsSubmissionIdRouteImport } from './routes/submissions.$submissionId'
 import { Route as WorkspaceIndexRouteImport } from './routes/workspace.index'
@@ -36,6 +37,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ApprovalsIndexRoute = ApprovalsIndexRouteImport.update({
   id: '/approvals/',
   path: '/approvals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApprovalsApprovalIdRoute = ApprovalsApprovalIdRouteImport.update({
+  id: '/approvals/$approvalId',
+  path: '/approvals/$approvalId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
   '/approvals/': typeof ApprovalsIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
   '/approvals': typeof ApprovalsIndexRoute
   '/submissions': typeof SubmissionsIndexRoute
   '/workspace': typeof WorkspaceIndexRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
   '/approvals/': typeof ApprovalsIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals/$approvalId'
     | '/approvals/'
     | '/submissions/'
     | '/workspace/'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals/$approvalId'
     | '/approvals'
     | '/submissions'
     | '/workspace'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals/$approvalId'
     | '/approvals/'
     | '/submissions/'
     | '/workspace/'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SubmissionsSubmissionIdRoute: typeof SubmissionsSubmissionIdRoute
   WorkspaceClaimIdRoute: typeof WorkspaceClaimIdRoute
+  ApprovalsApprovalIdRoute: typeof ApprovalsApprovalIdRoute
   ApprovalsIndexRoute: typeof ApprovalsIndexRoute
   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/approvals'
       fullPath: '/approvals/'
       preLoaderRoute: typeof ApprovalsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/approvals/$approvalId': {
+      id: '/approvals/$approvalId'
+      path: '/approvals/$approvalId'
+      fullPath: '/approvals/$approvalId'
+      preLoaderRoute: typeof ApprovalsApprovalIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/submissions/': {
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SubmissionsSubmissionIdRoute: SubmissionsSubmissionIdRoute,
   WorkspaceClaimIdRoute: WorkspaceClaimIdRoute,
+  ApprovalsApprovalIdRoute: ApprovalsApprovalIdRoute,
   ApprovalsIndexRoute: ApprovalsIndexRoute,
   SubmissionsIndexRoute: SubmissionsIndexRoute,
   WorkspaceIndexRoute: WorkspaceIndexRoute,

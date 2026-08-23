@@ -8,6 +8,7 @@ import { Logo } from "./Logo";
 const navItems = [
   { to: "/", label: "Dashboard", icon: "dashboard", exact: true },
   { to: "/workspace", label: "Workspace", icon: "clinical_notes", exact: false },
+  { to: "/approvals", label: "Approvals", icon: "fact_check", exact: false },
   { to: "/submissions", label: "Submissions", icon: "history", exact: false },
   { to: "/reports", label: "Reports", icon: "analytics", exact: false },
   { to: "/settings", label: "Settings", icon: "settings", exact: false },
@@ -105,7 +106,7 @@ export function AppShell({
       )}
 
       {/* Top app bar */}
-      <header className="fixed top-0 right-0 left-0 z-30 flex h-16 items-center justify-between border-b border-border-slate bg-white px-md font-label-caps text-label-caps shadow-sm lg:left-nav-width lg:px-lg">
+      <header className="fixed top-0 right-0 left-0 z-30 flex h-16 items-center justify-between border-b border-border-slate bg-white px-md font-label-caps text-label-caps shadow-sm lg:left-nav-width">
         <div className="flex min-w-0 items-center gap-sm font-bold text-on-surface">
           <button
             type="button"

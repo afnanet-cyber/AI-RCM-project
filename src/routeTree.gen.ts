@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ApprovalsIndexRouteImport } from './routes/approvals.index'
 import { Route as SubmissionsIndexRouteImport } from './routes/submissions.index'
 import { Route as SubmissionsSubmissionIdRouteImport } from './routes/submissions.$submissionId'
 import { Route as WorkspaceIndexRouteImport } from './routes/workspace.index'
@@ -30,6 +31,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApprovalsIndexRoute = ApprovalsIndexRouteImport.update({
+  id: '/approvals/',
+  path: '/approvals/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals/': typeof ApprovalsIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals': typeof ApprovalsIndexRoute
   '/submissions': typeof SubmissionsIndexRoute
   '/workspace': typeof WorkspaceIndexRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
+  '/approvals/': typeof ApprovalsIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
   '/workspace/': typeof WorkspaceIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals/'
     | '/submissions/'
     | '/workspace/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals'
     | '/submissions'
     | '/workspace'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/submissions/$submissionId'
     | '/workspace/$claimId'
+    | '/approvals/'
     | '/submissions/'
     | '/workspace/'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SubmissionsSubmissionIdRoute: typeof SubmissionsSubmissionIdRoute
   WorkspaceClaimIdRoute: typeof WorkspaceClaimIdRoute
+  ApprovalsIndexRoute: typeof ApprovalsIndexRoute
   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
 }
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/approvals/': {
+      id: '/approvals/'
+      path: '/approvals'
+      fullPath: '/approvals/'
+      preLoaderRoute: typeof ApprovalsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/submissions/': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SubmissionsSubmissionIdRoute: SubmissionsSubmissionIdRoute,
   WorkspaceClaimIdRoute: WorkspaceClaimIdRoute,
+  ApprovalsIndexRoute: ApprovalsIndexRoute,
   SubmissionsIndexRoute: SubmissionsIndexRoute,
   WorkspaceIndexRoute: WorkspaceIndexRoute,
 }

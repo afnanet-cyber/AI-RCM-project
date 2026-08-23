@@ -1,0 +1,891 @@
+diff -ruN a/src/components/insuraguard/AppShell.tsx b/src/components/insuraguard/AppShell.tsx
+--- a/src/components/insuraguard/AppShell.tsx	2026-08-23 12:16:40.000000000 +0000
++++ b/src/components/insuraguard/AppShell.tsx	2026-08-23 17:40:25.648521093 +0000
+@@ -8,6 +8,7 @@
+ const navItems = [
+   { to: "/", label: "Dashboard", icon: "dashboard", exact: true },
+   { to: "/workspace", label: "Workspace", icon: "clinical_notes", exact: false },
++  { to: "/approvals", label: "Approvals", icon: "fact_check", exact: false },
+   { to: "/submissions", label: "Submissions", icon: "history", exact: false },
+   { to: "/reports", label: "Reports", icon: "analytics", exact: false },
+   { to: "/settings", label: "Settings", icon: "settings", exact: false },
+diff -ruN a/src/lib/mock-data.ts b/src/lib/mock-data.ts
+--- a/src/lib/mock-data.ts	2026-08-23 12:16:40.000000000 +0000
++++ b/src/lib/mock-data.ts	2026-08-23 15:42:11.392808634 +0000
+@@ -157,68 +157,160 @@
+   total: string;
+ }
+ 
+-export const workspaceClaim: WorkspaceClaim = {
+-  id: "CLM-2023-891A",
+-  patient: {
+-    name: "Ahmed Al-Sayed",
+-    iqama: "1029384756",
+-    dob: "12-May-1980 (43y)",
+-    policy: "POL-992-811",
+-  },
+-  diagnoses: [
+-    { code: "J01.90", label: "Acute sinusitis, unspecified", primary: true },
+-    { code: "R50.9", label: "Fever, unspecified" },
+-    { code: "E11.9", label: "Type 2 diabetes mellitus w/o comp.", flagged: true },
+-  ],
+-  services: [
++export interface ValidationIssue {
++  id: string;
++  severity: "blocking" | "review";
++  category: string;
++  title: string;
++  evidence: string;
++  why?: string;
++  fix?: string;
++}
++
++/** Per-claim workspace detail. Every claim in `claims` MUST have an entry here — the
++ *  claim workspace page looks this up by id instead of showing a single fixed record. */
++const workspaceClaims: Record<string, WorkspaceClaim> = {
++  "CLM-2023-A01": {
++    id: "CLM-2023-A01",
++    patient: { name: "Ahmed Al-Sayed", iqama: "1029384756", dob: "12-May-1980 (46y)", policy: "POL-992-811" },
++    diagnoses: [
++      { code: "I21.9", label: "Acute myocardial infarction, unspecified", primary: true },
++      { code: "I10", label: "Essential hypertension", flagged: true },
++    ],
++    services: [
++      { code: "99222", description: "Initial hospital care, per day", qty: 1, unit: "450.00", net: "450.00" },
++    ],
++    documents: [{ name: "Admission_Note.pdf", meta: "120 KB • Today", kind: "pdf" }],
++    total: "SAR 450.00",
++  },
++  "CLM-2023-A02": {
++    id: "CLM-2023-A02",
++    patient: { name: "Mona Al-Harbi", iqama: "2044118902", dob: "03-Feb-1992 (34y)", policy: "POL-441-220" },
++    diagnoses: [{ code: "J01.90", label: "Acute sinusitis, unspecified", primary: true }],
++    services: [
++      { code: "99214", description: "Office/outpatient visit est", qty: 1, unit: "250.00", net: "250.00" },
++      { code: "85025", description: "Complete CBC w/auto diff WBC", qty: 1, unit: "120.00", net: "120.00", flagged: true },
++    ],
++    documents: [{ name: "Lab_Results.pdf", meta: "180 KB • Today", kind: "pdf" }],
++    total: "SAR 1,120.00",
++  },
++  "CLM-2023-A03": {
++    id: "CLM-2023-A03",
++    patient: { name: "Khalid Nasser", iqama: "1077120345", dob: "22-Sep-1975 (50y)", policy: "POL-118-903" },
++    diagnoses: [{ code: "S06.0X0A", label: "Concussion without loss of consciousness", primary: true }],
++    services: [
++      { code: "99284", description: "Emergency department visit, high complexity", qty: 1, unit: "900.00", net: "900.00" },
++      { code: "70450", description: "CT head/brain without contrast", qty: 1, unit: "1400.00", net: "1400.00" },
++    ],
++    documents: [
++      { name: "CT_Head_Report.pdf", meta: "1.1 MB • Yesterday", kind: "pdf" },
++      { name: "ER_Physician_Note.pdf", meta: "72 KB • Yesterday", kind: "pdf" },
++    ],
++    total: "SAR 2,300.00",
++  },
++  "CLM-2023-A04": {
++    id: "CLM-2023-A04",
++    patient: { name: "Sara Al-Otaibi", iqama: "1098221340", dob: "17-Nov-1988 (37y)", policy: "POL-773-401" },
++    diagnoses: [{ code: "E11.9", label: "Type 2 diabetes mellitus w/o comp.", primary: true, flagged: true }],
++    services: [
++      { code: "83036", description: "Hemoglobin A1C", qty: 1, unit: "90.00", net: "90.00" },
++    ],
++    documents: [{ name: "Pharmacy_Dispense.pdf", meta: "32 KB • Yesterday", kind: "pdf" }],
++    total: "SAR 310.00",
++  },
++  "CLM-2023-A05": {
++    id: "CLM-2023-A05",
++    patient: { name: "Faisal Al-Dosari", iqama: "1055440021", dob: "05-Jan-1990 (36y)", policy: "POL-660-118" },
++    diagnoses: [{ code: "K02.9", label: "Dental caries, unspecified", primary: true }],
++    services: [
++      { code: "D2140", description: "Amalgam restoration, one surface", qty: 2, unit: "390.00", net: "780.00" },
++    ],
++    documents: [{ name: "Dental_Xray.jpg", meta: "800 KB • Yesterday", kind: "image" }],
++    total: "SAR 780.00",
++  },
++  "CLM-2023-891A": {
++    id: "CLM-2023-891A",
++    patient: { name: "Ahmed Al-Sayed", iqama: "1029384756", dob: "12-May-1980 (46y)", policy: "POL-992-811" },
++    diagnoses: [
++      { code: "J01.90", label: "Acute sinusitis, unspecified", primary: true },
++      { code: "R50.9", label: "Fever, unspecified" },
++      { code: "E11.9", label: "Type 2 diabetes mellitus w/o comp.", flagged: true },
++    ],
++    services: [
++      { code: "99214", description: "Office/outpatient visit est", qty: 1, unit: "250.00", net: "250.00" },
++      { code: "85025", description: "Complete CBC w/auto diff WBC", qty: 1, unit: "120.00", net: "120.00", flagged: true },
++      { code: "81002", description: "Urinalysis nonauto w/o scope", qty: 1, unit: "80.00", net: "80.00" },
++    ],
++    documents: [
++      { name: "Lab_Results_05.pdf", meta: "245 KB • 12 May", kind: "pdf" },
++      { name: "Referral_Form.jpg", meta: "1.2 MB • 11 May", kind: "image" },
++    ],
++    total: "SAR 450.00",
++  },
++};
++
++const validationIssuesByClaim: Record<string, ValidationIssue[]> = {
++  "CLM-2023-A01": [
+     {
+-      code: "99214",
+-      description: "Office/outpatient visit est",
+-      qty: 1,
+-      unit: "250.00",
+-      net: "250.00",
++      id: "A01-1",
++      severity: "blocking",
++      category: "Missing Prior Authorization",
++      title: "High-cost inpatient admission missing an approval reference.",
++      evidence: "No prior authorization is linked to this encounter.",
++      why: "Payers reject inpatient admissions submitted without a linked approval.",
++      fix: "Create an approval request for this encounter before submitting.",
+     },
++  ],
++  "CLM-2023-A02": [
+     {
+-      code: "85025",
+-      description: "Complete CBC w/auto diff WBC",
+-      qty: 1,
+-      unit: "120.00",
+-      net: "120.00",
+-      flagged: true,
++      id: "A02-1",
++      severity: "review",
++      category: "Documentation",
++      title: "Lab result attached but not cross-referenced in the clinical note.",
++      evidence: "CBC (85025) is billed; the note does not explicitly justify the test.",
+     },
++  ],
++  "CLM-2023-A03": [],
++  "CLM-2023-A04": [
+     {
+-      code: "81002",
+-      description: "Urinalysis nonauto w/o scope",
+-      qty: 1,
+-      unit: "80.00",
+-      net: "80.00",
++      id: "A04-1",
++      severity: "review",
++      category: "Coding Conflict",
++      title: "Unspecified diagnosis code used.",
++      evidence:
++        "E11.9 (Type 2 diabetes) is unspecified. Nphies historically prefers specific codes when available.",
+     },
+   ],
+-  documents: [
+-    { name: "Lab_Results_05.pdf", meta: "245 KB • 12 May", kind: "pdf" },
+-    { name: "Referral_Form.jpg", meta: "1.2 MB • 11 May", kind: "image" },
++  "CLM-2023-A05": [],
++  "CLM-2023-891A": [
++    {
++      id: "891A-1",
++      severity: "blocking",
++      category: "Missing Medical Necessity",
++      title: "Missing clinical justification for Complete CBC.",
++      evidence:
++        "CPT 85025 is linked to diagnosis J01.90, but supporting medical necessity documentation is missing.",
++      why: "This may increase rejection risk during Nphies validation.",
++      fix: "Attach supporting documentation or update the diagnosis relationship.",
++    },
++    {
++      id: "891A-2",
++      severity: "review",
++      category: "Coding Conflict",
++      title: "Unspecified diagnosis code used.",
++      evidence:
++        "E11.9 (Type 2 diabetes) is unspecified. Nphies historically rejects generic codes when specifics are available in history.",
++    },
+   ],
+-  total: "SAR 450.00",
+ };
+ 
+-export const validationIssues = [
+-  {
+-    severity: "blocking" as const,
+-    category: "Missing Medical Necessity",
+-    title: "Missing clinical justification for Complete CBC.",
+-    evidence:
+-      "CPT 85025 is linked to diagnosis J01.90, but supporting medical necessity documentation is missing.",
+-    why: "This may increase rejection risk during Nphies validation.",
+-    fix: "Attach supporting documentation or update the diagnosis relationship.",
+-  },
+-  {
+-    severity: "review" as const,
+-    category: "Coding Conflict",
+-    title: "Unspecified diagnosis code used.",
+-    evidence:
+-      "E11.9 (Type 2 diabetes) is unspecified. Nphies historically rejects generic codes when specifics are available in history.",
+-  },
+-];
++export function getWorkspaceClaim(claimId: string): WorkspaceClaim | undefined {
++  return workspaceClaims[claimId];
++}
++
++export function getValidationIssues(claimId: string): ValidationIssue[] {
++  return validationIssuesByClaim[claimId] ?? [];
++}
+ 
+ // -------------------------------------------------------------- Submissions
+ 
+@@ -354,3 +446,57 @@
+ export function findClaim(id: string) {
+   return claims.find((c) => c.id === id);
+ }
++
++// ---------------------------------------------------------------------------
++// Bridge: submissions and the claim workspace used to use two disconnected ID
++// schemes (CLM-2024-... vs CLM-2023-...), so "Correct & Resubmit" always hit a
++// 404. Every submission now gets a matching claim + workspace record derived
++// straight from its own data, so re-opening a submission in the workspace
++// always resolves to the real claim it belongs to.
++// ---------------------------------------------------------------------------
++for (const s of submissions) {
++  if (!findClaim(s.id)) {
++    claims.push({
++      id: s.id,
++      patientMasked: `***-${s.mrn.slice(-4)}`,
++      patientName: s.patient,
++      serviceType: s.encounterType,
++      risk: s.status === "rejected" ? "high" : s.status === "pending" ? "medium" : "low",
++      status: s.status === "rejected" ? "flagged" : s.status === "pending" ? "review" : "validated",
++      time: s.submittedAt,
++      totalSar: s.amount.replace("SAR ", ""),
++    });
++  }
++
++  if (!getWorkspaceClaim(s.id)) {
++    const [diagCode, ...diagLabelParts] = s.diagnosis.split(" - ");
++    workspaceClaims[s.id] = {
++      id: s.id,
++      patient: { name: s.patient, iqama: s.mrn, dob: "—", policy: s.ref },
++      diagnoses: [{ code: diagCode, label: diagLabelParts.join(" - ") || s.diagnosis, primary: true }],
++      services: s.lines.map((l) => ({
++        code: l.code,
++        description: l.description,
++        qty: l.qty,
++        unit: l.amount.replace("SAR ", ""),
++        net: l.amount.replace("SAR ", ""),
++        flagged: l.denied,
++      })),
++      documents: [{ name: `${s.ref}_submission_package.pdf`, meta: `Imported from ${s.id}`, kind: "pdf" }],
++      total: s.amount,
++    };
++  }
++
++  if (s.status === "rejected" && !validationIssuesByClaim[s.id]) {
++    validationIssuesByClaim[s.id] = s.lines
++      .filter((l) => l.denied)
++      .map((l, i) => ({
++        id: `${s.id}-${i}`,
++        severity: "blocking" as const,
++        category: "Payer Denial",
++        title: `Payer denied ${l.code} — ${l.description}.`,
++        evidence: s.payerReason ?? "The payer rejected this line item.",
++        fix: "Correct the flagged line item and resubmit with supporting documentation.",
++      }));
++  }
++}
+diff -ruN a/src/routeTree.gen.ts b/src/routeTree.gen.ts
+--- a/src/routeTree.gen.ts	2026-08-23 12:16:40.000000000 +0000
++++ b/src/routeTree.gen.ts	2026-08-23 17:40:17.711104004 +0000
+@@ -13,6 +13,7 @@
+ import { Route as ReportsRouteImport } from './routes/reports'
+ import { Route as SettingsRouteImport } from './routes/settings'
+ import { Route as ApprovalsIndexRouteImport } from './routes/approvals.index'
++import { Route as ApprovalsApprovalIdRouteImport } from './routes/approvals.$approvalId'
+ import { Route as SubmissionsIndexRouteImport } from './routes/submissions.index'
+ import { Route as SubmissionsSubmissionIdRouteImport } from './routes/submissions.$submissionId'
+ import { Route as WorkspaceIndexRouteImport } from './routes/workspace.index'
+@@ -38,6 +39,11 @@
+   path: '/approvals/',
+   getParentRoute: () => rootRouteImport,
+ } as any)
++const ApprovalsApprovalIdRoute = ApprovalsApprovalIdRouteImport.update({
++  id: '/approvals/$approvalId',
++  path: '/approvals/$approvalId',
++  getParentRoute: () => rootRouteImport,
++} as any)
+ const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
+   id: '/submissions/',
+   path: '/submissions/',
+@@ -65,6 +71,7 @@
+   '/settings': typeof SettingsRoute
+   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
+   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
++  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
+   '/approvals/': typeof ApprovalsIndexRoute
+   '/submissions/': typeof SubmissionsIndexRoute
+   '/workspace/': typeof WorkspaceIndexRoute
+@@ -75,6 +82,7 @@
+   '/settings': typeof SettingsRoute
+   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
+   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
++  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
+   '/approvals': typeof ApprovalsIndexRoute
+   '/submissions': typeof SubmissionsIndexRoute
+   '/workspace': typeof WorkspaceIndexRoute
+@@ -86,6 +94,7 @@
+   '/settings': typeof SettingsRoute
+   '/submissions/$submissionId': typeof SubmissionsSubmissionIdRoute
+   '/workspace/$claimId': typeof WorkspaceClaimIdRoute
++  '/approvals/$approvalId': typeof ApprovalsApprovalIdRoute
+   '/approvals/': typeof ApprovalsIndexRoute
+   '/submissions/': typeof SubmissionsIndexRoute
+   '/workspace/': typeof WorkspaceIndexRoute
+@@ -98,6 +107,7 @@
+     | '/settings'
+     | '/submissions/$submissionId'
+     | '/workspace/$claimId'
++    | '/approvals/$approvalId'
+     | '/approvals/'
+     | '/submissions/'
+     | '/workspace/'
+@@ -108,6 +118,7 @@
+     | '/settings'
+     | '/submissions/$submissionId'
+     | '/workspace/$claimId'
++    | '/approvals/$approvalId'
+     | '/approvals'
+     | '/submissions'
+     | '/workspace'
+@@ -118,6 +129,7 @@
+     | '/settings'
+     | '/submissions/$submissionId'
+     | '/workspace/$claimId'
++    | '/approvals/$approvalId'
+     | '/approvals/'
+     | '/submissions/'
+     | '/workspace/'
+@@ -129,6 +141,7 @@
+   SettingsRoute: typeof SettingsRoute
+   SubmissionsSubmissionIdRoute: typeof SubmissionsSubmissionIdRoute
+   WorkspaceClaimIdRoute: typeof WorkspaceClaimIdRoute
++  ApprovalsApprovalIdRoute: typeof ApprovalsApprovalIdRoute
+   ApprovalsIndexRoute: typeof ApprovalsIndexRoute
+   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
+   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
+@@ -164,6 +177,13 @@
+       preLoaderRoute: typeof ApprovalsIndexRouteImport
+       parentRoute: typeof rootRouteImport
+     }
++    '/approvals/$approvalId': {
++      id: '/approvals/$approvalId'
++      path: '/approvals/$approvalId'
++      fullPath: '/approvals/$approvalId'
++      preLoaderRoute: typeof ApprovalsApprovalIdRouteImport
++      parentRoute: typeof rootRouteImport
++    }
+     '/submissions/': {
+       id: '/submissions/'
+       path: '/submissions'
+@@ -201,6 +221,7 @@
+   SettingsRoute: SettingsRoute,
+   SubmissionsSubmissionIdRoute: SubmissionsSubmissionIdRoute,
+   WorkspaceClaimIdRoute: WorkspaceClaimIdRoute,
++  ApprovalsApprovalIdRoute: ApprovalsApprovalIdRoute,
+   ApprovalsIndexRoute: ApprovalsIndexRoute,
+   SubmissionsIndexRoute: SubmissionsIndexRoute,
+   WorkspaceIndexRoute: WorkspaceIndexRoute,
+diff -ruN a/src/routes/__root.tsx b/src/routes/__root.tsx
+--- a/src/routes/__root.tsx	2026-08-23 12:16:40.000000000 +0000
++++ b/src/routes/__root.tsx	2026-08-23 17:41:36.901356896 +0000
+@@ -77,14 +77,13 @@
+     meta: [
+       { charSet: "utf-8" },
+       { name: "viewport", content: "width=device-width, initial-scale=1" },
+-      { title: "Lovable App" },
+-      { name: "description", content: "Lovable Generated Project" },
+-      { name: "author", content: "Lovable" },
+-      { property: "og:title", content: "Lovable App" },
+-      { property: "og:description", content: "Lovable Generated Project" },
++      { title: "InsuraGuard AI" },
++      { name: "description", content: "AI-assisted RCM pre-validation for Nphies claims." },
++      { name: "author", content: "InsuraGuard AI" },
++      { property: "og:title", content: "InsuraGuard AI" },
++      { property: "og:description", content: "AI-assisted RCM pre-validation for Nphies claims." },
+       { property: "og:type", content: "website" },
+       { name: "twitter:card", content: "summary_large_image" },
+-      { name: "twitter:site", content: "@Lovable" },
+     ],
+     links: [
+       {
+diff -ruN a/src/routes/approvals.$approvalId.tsx b/src/routes/approvals.$approvalId.tsx
+--- a/src/routes/approvals.$approvalId.tsx	1970-01-01 00:00:00.000000000 +0000
++++ b/src/routes/approvals.$approvalId.tsx	2026-08-23 15:44:05.370213643 +0000
+@@ -0,0 +1,147 @@
++import { createFileRoute, Link, notFound } from "@tanstack/react-router";
++
++import { AppShell } from "@/components/insuraguard/AppShell";
++import { Icon } from "@/components/insuraguard/Icon";
++import {
++  CommunicationBox,
++  DocumentPicker,
++  ModeToggle,
++  StatusTimeline,
++  ValidationPanel,
++} from "@/components/insuraguard/WorkflowParts";
++import { formatSar, getDocumentsForVisit, getPatient, getVisit } from "@/lib/his-data";
++import {
++  addApprovalMessage,
++  approvalStatusLabel,
++  setApprovalMode,
++  setApprovalStatus,
++  statusChip,
++  toggleApprovalDocument,
++  useApproval,
++  validateApproval,
++  type ApprovalStatus,
++} from "@/lib/rcm-store";
++
++export const Route = createFileRoute("/approvals/$approvalId")({
++  loader: ({ params }) => {
++    // The store is client-side/in-memory, so we only validate the id shape here;
++    // the real lookup (and 404 if it's truly missing) happens in the component
++    // via useApproval, which stays reactive to store mutations.
++    if (!params.approvalId) throw notFound();
++    return {};
++  },
++  head: ({ params }) => {
++    const title = `Approval ${params.approvalId} | InsuraGuard AI`;
++    return {
++      meta: [
++        { title },
++        {
++          name: "description",
++          content: `Review and act on approval ${params.approvalId}: documents, AI validation, status and payer communication.`,
++        },
++        { property: "og:title", content: title },
++      ],
++    };
++  },
++  notFoundComponent: ApprovalNotFound,
++  component: ApprovalDetail,
++});
++
++function ApprovalNotFound() {
++  return (
++    <AppShell title="Approval not found" contentClassName="p-lg">
++      <div className="mx-auto max-w-md rounded-xl border border-border-slate bg-white p-lg text-center shadow-sm">
++        <Icon name="search_off" className="text-[32px] text-secondary" />
++        <h1 className="mt-sm font-headline-sm text-headline-sm">Approval not found</h1>
++        <Link
++          to="/approvals"
++          className="mt-md inline-flex items-center gap-sm rounded bg-primary px-4 py-2 font-label-caps text-label-caps text-on-primary"
++        >
++          Back to approvals
++        </Link>
++      </div>
++    </AppShell>
++  );
++}
++
++const nextStatuses: { value: ApprovalStatus; label: string; icon: string }[] = [
++  { value: "under_review", label: "Move to review", icon: "visibility" },
++  { value: "submitted", label: "Submit to payer", icon: "send" },
++  { value: "approved", label: "Mark approved", icon: "check_circle" },
++  { value: "additional_info", label: "Request more info", icon: "help" },
++  { value: "rejected", label: "Mark rejected", icon: "cancel" },
++];
++
++function ApprovalDetail() {
++  const { approvalId } = Route.useParams();
++  const approval = useApproval(approvalId);
++
++  if (!approval) {
++    return <ApprovalNotFound />;
++  }
++
++  const visit = getVisit(approval.visitId);
++  const patient = getPatient(approval.patientId);
++  const docs = visit ? getDocumentsForVisit(visit.visitId) : [];
++  const validation = validateApproval(approval);
++
++  return (
++    <AppShell title={`Approval ${approval.approvalId}`} backTo={{ to: "/approvals" }} contentClassName="p-md lg:p-lg">
++      <div className="mx-auto flex max-w-5xl flex-col gap-lg">
++        <div className="flex flex-wrap items-start justify-between gap-md">
++          <div>
++            <h1 className="font-headline-lg text-headline-lg text-on-surface">{approval.approvalId}</h1>
++            <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
++              {patient?.name} · {visit?.department} · {formatSar(approval.requestedAmount)}
++            </p>
++          </div>
++          <span className={`inline-block rounded border px-3 py-1 font-label-caps text-[11px] ${statusChip[approval.status]}`}>
++            {approvalStatusLabel[approval.status]}
++          </span>
++        </div>
++
++        <ModeToggle mode={approval.mode} onChange={(mode) => setApprovalMode(approval.approvalId, mode)} />
++
++        <DocumentPicker
++          documents={docs}
++          selectedIds={approval.selectedDocumentIds}
++          mode={approval.mode}
++          onToggle={(documentId) => toggleApprovalDocument(approval.approvalId, documentId)}
++        />
++
++        <ValidationPanel result={validation} />
++
++        <section className="rounded-xl border border-border-slate bg-white p-md">
++          <h2 className="mb-sm font-label-caps text-label-caps text-on-surface">Actions</h2>
++          <div className="flex flex-wrap gap-sm">
++            {nextStatuses.map((s) => (
++              <button
++                key={s.value}
++                type="button"
++                disabled={approval.status === s.value}
++                onClick={() =>
++                  setApprovalStatus(
++                    approval.approvalId,
++                    s.value,
++                    `Status changed to ${approvalStatusLabel[s.value]} by RCM Auditor.`,
++                  )
++                }
++                className="flex items-center gap-1 rounded border border-border-slate px-3 py-1.5 font-label-caps text-[11px] text-on-surface transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
++              >
++                <Icon name={s.icon} className="text-[14px]" />
++                {s.label}
++              </button>
++            ))}
++          </div>
++        </section>
++
++        <StatusTimeline history={approval.history} labelFor={(s) => approvalStatusLabel[s as ApprovalStatus] ?? s} />
++
++        <CommunicationBox
++          messages={approval.messages}
++          onSend={(channel, body) => addApprovalMessage(approval.approvalId, channel, body)}
++        />
++      </div>
++    </AppShell>
++  );
++}
+diff -ruN a/src/routes/workspace.$claimId.tsx b/src/routes/workspace.$claimId.tsx
+--- a/src/routes/workspace.$claimId.tsx	2026-08-23 12:16:40.000000000 +0000
++++ b/src/routes/workspace.$claimId.tsx	2026-08-23 15:43:43.727907207 +0000
+@@ -1,14 +1,22 @@
++import { useMemo, useState } from "react";
+ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
++import { toast } from "sonner";
+ 
+ import { AppShell } from "@/components/insuraguard/AppShell";
+ import { Icon } from "@/components/insuraguard/Icon";
+-import { findClaim, validationIssues, workspaceClaim } from "@/lib/mock-data";
++import {
++  findClaim,
++  getValidationIssues,
++  getWorkspaceClaim,
++  type ValidationIssue,
++} from "@/lib/mock-data";
+ 
+ export const Route = createFileRoute("/workspace/$claimId")({
+   loader: ({ params }) => {
+     const claim = findClaim(params.claimId);
+-    if (!claim) throw notFound();
+-    return { claim };
++    const data = getWorkspaceClaim(params.claimId);
++    if (!claim || !data) throw notFound();
++    return { claim, data, issues: getValidationIssues(params.claimId) };
+   },
+   head: ({ params, loaderData }) => {
+     if (!loaderData) {
+@@ -55,8 +63,89 @@
+ }
+ 
+ function ClaimWorkspace() {
+-  const { claim } = Route.useLoaderData();
+-  const data = workspaceClaim;
++  const { claim, data } = Route.useLoaderData();
++  const initialIssues = getValidationIssues(claim.id);
++
++  // Local, per-session state: applying a fix or re-running validation actually
++  // changes what's shown, instead of every button being visual-only.
++  const [issues, setIssues] = useState<ValidationIssue[]>(initialIssues);
++  const [documents, setDocuments] = useState(data.documents);
++  const [isValidating, setIsValidating] = useState(false);
++  const [lastRunAt, setLastRunAt] = useState<string | null>(null);
++
++  const blockingCount = useMemo(() => issues.filter((i) => i.severity === "blocking").length, [issues]);
++  const reviewCount = issues.length - blockingCount;
++  const canSubmit = blockingCount === 0;
++
++  type Tier = "critical" | "warning" | "ready";
++  const tier: Tier = blockingCount > 0 ? "critical" : reviewCount > 0 ? "warning" : "ready";
++  const overallLabel = tier === "critical" ? "High Risk" : tier === "warning" ? "Needs Review" : "Ready";
++  // Full literal class strings per tier — Tailwind's scanner cannot see classes
++  // built via `${}` interpolation, so those would silently disappear at build time.
++  const tierStyles: Record<
++    Tier,
++    { badge: string; dot: string; banner: string; iconWrap: string; label: string; value: string; count: string }
++  > = {
++    critical: {
++      badge:
++        "flex w-fit items-center gap-2 rounded border border-critical-amethyst/30 bg-critical-amethyst/10 px-2 py-1 font-label-caps text-[11px] font-bold text-critical-amethyst",
++      dot: "h-1.5 w-1.5 rounded-full bg-critical-amethyst",
++      banner: "flex items-center justify-between border-b border-critical-amethyst/20 bg-critical-amethyst/5 px-md py-sm",
++      iconWrap: "flex h-8 w-8 items-center justify-center rounded-full bg-critical-amethyst text-white shadow-sm",
++      label: "font-label-caps text-[10px] font-bold tracking-wider text-critical-amethyst uppercase",
++      value: "font-headline-sm text-[16px] leading-tight font-bold text-critical-amethyst",
++      count: "font-data-mono text-[14px] font-bold text-critical-amethyst",
++    },
++    warning: {
++      badge:
++        "flex w-fit items-center gap-2 rounded border border-warning-amber/30 bg-warning-amber/10 px-2 py-1 font-label-caps text-[11px] font-bold text-warning-amber",
++      dot: "h-1.5 w-1.5 rounded-full bg-warning-amber",
++      banner: "flex items-center justify-between border-b border-warning-amber/20 bg-warning-amber/5 px-md py-sm",
++      iconWrap: "flex h-8 w-8 items-center justify-center rounded-full bg-warning-amber text-white shadow-sm",
++      label: "font-label-caps text-[10px] font-bold tracking-wider text-warning-amber uppercase",
++      value: "font-headline-sm text-[16px] leading-tight font-bold text-warning-amber",
++      count: "font-data-mono text-[14px] font-bold text-warning-amber",
++    },
++    ready: {
++      badge:
++        "flex w-fit items-center gap-2 rounded border border-success-emerald/30 bg-success-emerald/10 px-2 py-1 font-label-caps text-[11px] font-bold text-success-emerald",
++      dot: "h-1.5 w-1.5 rounded-full bg-success-emerald",
++      banner: "flex items-center justify-between border-b border-success-emerald/20 bg-success-emerald/5 px-md py-sm",
++      iconWrap: "flex h-8 w-8 items-center justify-center rounded-full bg-success-emerald text-white shadow-sm",
++      label: "font-label-caps text-[10px] font-bold tracking-wider text-success-emerald uppercase",
++      value: "font-headline-sm text-[16px] leading-tight font-bold text-success-emerald",
++      count: "font-data-mono text-[14px] font-bold text-success-emerald",
++    },
++  };
++  const styles = tierStyles[tier];
++
++  function applyFix(issueId: string) {
++    setIssues((prev) => prev.filter((i) => i.id !== issueId));
++    toast.success("Fix applied — issue marked resolved for this session.");
++  }
++
++  function runValidation() {
++    setIsValidating(true);
++    // Re-checks against the same rule set. In this simulated build there's no
++    // live payer connection, so "running" re-confirms the current findings —
++    // it does not silently clear real issues.
++    window.setTimeout(() => {
++      setIsValidating(false);
++      setLastRunAt(new Date().toLocaleTimeString("en-GB"));
++      toast(issues.length === 0 ? "No issues found — ready to submit." : `${issues.length} issue(s) still open.`);
++    }, 700);
++  }
++
++  function addDocument() {
++    const name = window.prompt("File name to attach (demo upload — no real file storage yet):");
++    if (!name) return;
++    setDocuments((prev) => [...prev, { name, meta: "Just now • Manually attached", kind: "pdf" }]);
++  }
++
++  function submitToNphies() {
++    if (!canSubmit) return;
++    toast.success("Submitted to Nphies (simulated — no live payer connection in this build).");
++  }
+ 
+   return (
+     <AppShell
+@@ -72,9 +161,10 @@
+               <h1 className="font-headline-md text-headline-md text-on-surface">
+                 CLAIM #{claim.id}
+               </h1>
+-              <div className="flex w-fit items-center gap-2 rounded border border-critical-amethyst/30 bg-critical-amethyst/10 px-2 py-1 font-label-caps text-[11px] font-bold text-critical-amethyst">
+-                <span className="h-1.5 w-1.5 rounded-full bg-critical-amethyst" />
+-                HIGH RISK · 2 ISSUES · NOT READY TO SUBMIT
++              <div className={styles.badge}>
++                <span className={styles.dot} />
++                {overallLabel.toUpperCase()} · {issues.length} ISSUE{issues.length === 1 ? "" : "S"} ·{" "}
++                {canSubmit ? "READY TO SUBMIT" : "NOT READY TO SUBMIT"}
+               </div>
+             </div>
+             <div className="flex h-fit items-center gap-sm rounded-full border border-success-emerald/30 bg-success-emerald/10 px-3 py-1.5 text-success-emerald">
+@@ -120,12 +210,6 @@
+                 <Icon name="coronavirus" className="text-[16px]" />
+                 ICD-10 Diagnosis
+               </h2>
+-              <button
+-                type="button"
+-                className="flex items-center gap-xs text-label-sm font-medium text-primary hover:underline"
+-              >
+-                <Icon name="add" className="text-[14px]" /> Add Code
+-              </button>
+             </div>
+             <div className="flex flex-wrap gap-sm">
+               {data.diagnoses.map((d) => (
+@@ -221,14 +305,13 @@
+         <div className="mt-auto">
+           <h2 className="mb-sm flex items-center gap-xs font-label-caps text-label-caps text-secondary">
+             <Icon name="attach_file" className="text-[16px]" />
+-            Attached Clinical Documents ({data.documents.length})
++            Attached Clinical Documents ({documents.length})
+           </h2>
+           <div className="flex gap-md overflow-x-auto pb-sm">
+-            {data.documents.map((doc) => (
+-              <button
++            {documents.map((doc) => (
++              <div
+                 key={doc.name}
+-                type="button"
+-                className="group flex w-48 shrink-0 items-center gap-sm rounded-lg border border-border-slate bg-surface p-sm text-left transition-colors hover:border-primary/50"
++                className="group flex w-48 shrink-0 items-center gap-sm rounded-lg border border-border-slate bg-surface p-sm text-left"
+               >
+                 <span
+                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${
+@@ -248,11 +331,16 @@
+                   </span>
+                   <span className="font-body-sm text-[10px] text-secondary">{doc.meta}</span>
+                 </span>
+-              </button>
++              </div>
+             ))}
+-            <div className="flex w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-outline-variant bg-surface-container-low text-secondary transition-colors hover:border-primary hover:text-primary">
++            <button
++              type="button"
++              onClick={addDocument}
++              className="flex w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-outline-variant bg-surface-container-low text-secondary transition-colors hover:border-primary hover:text-primary"
++              aria-label="Attach a document"
++            >
+               <Icon name="add" className="text-[20px]" />
+-            </div>
++            </button>
+           </div>
+         </div>
+       </div>
+@@ -271,40 +359,45 @@
+           </div>
+           <button
+             type="button"
+-            className="flex w-full items-center justify-center gap-sm rounded-lg border border-primary bg-white px-md py-sm font-label-caps text-label-caps text-primary shadow-sm transition-all duration-150 hover:bg-primary hover:text-white active:scale-[0.98]"
++            onClick={runValidation}
++            disabled={isValidating}
++            className="flex w-full items-center justify-center gap-sm rounded-lg border border-primary bg-white px-md py-sm font-label-caps text-label-caps text-primary shadow-sm transition-all duration-150 hover:bg-primary hover:text-white active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+           >
+-            <Icon name="refresh" className="text-[16px]" />
+-            Run Nphies Validation
++            <Icon name="refresh" className={`text-[16px] ${isValidating ? "animate-spin" : ""}`} />
++            {isValidating ? "Running..." : "Run Nphies Validation"}
+           </button>
++          {lastRunAt && (
++            <p className="mt-2 text-center font-label-sm text-[11px] text-on-surface-variant">
++              Last run at {lastRunAt}
++            </p>
++          )}
+         </div>
+ 
+-        <div className="flex items-center justify-between border-b border-critical-amethyst/20 bg-critical-amethyst/5 px-md py-sm">
++        <div className={styles.banner}>
+           <div className="flex items-center gap-sm">
+-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-critical-amethyst text-white shadow-sm">
+-              <Icon name="gpp_bad" className="text-[18px]" />
++            <span className={styles.iconWrap}>
++              <Icon name={canSubmit ? "verified" : "gpp_bad"} className="text-[18px]" />
+             </span>
+             <span className="flex flex-col">
+-              <span className="font-label-caps text-[10px] font-bold tracking-wider text-critical-amethyst uppercase">
+-                Overall Status
+-              </span>
+-              <span className="font-headline-sm text-[16px] leading-tight font-bold text-critical-amethyst">
+-                High Risk
+-              </span>
++              <span className={styles.label}>Overall Status</span>
++              <span className={styles.value}>{overallLabel}</span>
+             </span>
+           </div>
+-          <span className="font-data-mono text-[14px] font-bold text-critical-amethyst">
+-            2 Flags
++          <span className={styles.count}>
++            {issues.length} Flag{issues.length === 1 ? "" : "s"}
+           </span>
+         </div>
+ 
+         <div className="flex flex-1 flex-col gap-sm bg-bg-slate-light p-md xl:overflow-y-auto">
+           <div className="mb-xs pl-1 font-label-caps text-[11px] text-secondary">
+-            2 Issues Found (1 Blocking, 1 Review Recommended)
++            {issues.length === 0
++              ? "No issues found."
++              : `${issues.length} Issue(s) Found (${blockingCount} Blocking, ${reviewCount} Review Recommended)`}
+           </div>
+ 
+-          {validationIssues.map((issue) => (
++          {issues.map((issue) => (
+             <div
+-              key={issue.category}
++              key={issue.id}
+               className={`relative overflow-hidden rounded-lg border bg-white shadow-sm ${
+                 issue.severity === "blocking"
+                   ? "border-critical-amethyst/40"
+@@ -356,54 +449,49 @@
+                     <span className="font-semibold">Recommended fix:</span> {issue.fix}
+                   </div>
+                 )}
+-                <div className="mt-3 flex items-center justify-between gap-sm">
+-                  <button
+-                    type="button"
+-                    className="flex items-center gap-1 text-[11px] font-medium text-secondary transition-colors hover:text-on-surface"
+-                  >
+-                    <Icon name="visibility" className="text-[14px]" /> View Ruleset
+-                  </button>
++                <div className="mt-3 flex items-center justify-end gap-sm">
+                   <button
+                     type="button"
+-                    className={`flex items-center gap-1 rounded border bg-white px-3 py-1 font-label-sm text-[11px] transition-colors ${
+-                      issue.severity === "blocking"
+-                        ? "border-success-emerald text-success-emerald hover:bg-success-emerald hover:text-white"
+-                        : "border-secondary text-secondary hover:bg-secondary hover:text-white"
+-                    }`}
++                    onClick={() => applyFix(issue.id)}
++                    className="flex items-center gap-1 rounded border border-success-emerald bg-white px-3 py-1 font-label-sm text-[11px] text-success-emerald transition-colors hover:bg-success-emerald hover:text-white"
+                   >
+-                    {issue.severity === "blocking" ? (
+-                      <>
+-                        <Icon name="auto_fix_high" className="text-[14px]" /> Apply Fix
+-                      </>
+-                    ) : (
+-                      "Review Alternatives"
+-                    )}
++                    <Icon name="auto_fix_high" className="text-[14px]" /> Mark Resolved
+                   </button>
+                 </div>
+               </div>
+             </div>
+           ))}
+ 
+-          <div className="mt-2 flex items-center justify-center rounded-lg border border-dashed border-outline-variant py-3 text-secondary opacity-60">
+-            <span className="flex items-center gap-2 font-label-sm text-[11px]">
+-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-secondary border-t-transparent" />
+-              Monitoring changes...
+-            </span>
+-          </div>
++          {issues.length === 0 && (
++            <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-success-emerald/40 bg-success-emerald/5 py-4 text-success-emerald">
++              <Icon name="verified" className="text-[18px]" />
++              <span className="font-label-sm text-[12px] font-medium">
++                All checks passed — ready for submission.
++              </span>
++            </div>
++          )}
+         </div>
+ 
+         <div className="border-t border-border-slate bg-white p-md">
+           <button
+             type="button"
+-            disabled
+-            className="flex w-full cursor-not-allowed items-center justify-center gap-sm rounded-lg bg-surface-container px-md py-sm font-label-caps text-label-caps text-outline"
++            disabled={!canSubmit}
++            onClick={submitToNphies}
++            className={`flex w-full items-center justify-center gap-sm rounded-lg px-md py-sm font-label-caps text-label-caps transition-colors ${
++              canSubmit
++                ? "bg-primary text-on-primary hover:opacity-90"
++                : "cursor-not-allowed bg-surface-container text-outline"
++            }`}
+           >
+-            <Icon name="lock" className="text-[18px]" />
++            <Icon name={canSubmit ? "send" : "lock"} className="text-[18px]" />
+             Submit Directly to Nphies
+           </button>
+-          <p className="mt-2 flex items-center justify-center gap-1 text-center font-label-sm text-[11px] text-error-red">
+-            <Icon name="error" className="text-[12px]" /> 1 blocking issue remaining
+-          </p>
++          {!canSubmit && (
++            <p className="mt-2 flex items-center justify-center gap-1 text-center font-label-sm text-[11px] text-error-red">
++              <Icon name="error" className="text-[12px]" /> {blockingCount} blocking issue
++              {blockingCount === 1 ? "" : "s"} remaining
++            </p>
++          )}
+           <div className="pt-sm text-center">
+             <Link
+               to="/submissions"
